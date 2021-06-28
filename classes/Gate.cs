@@ -12,7 +12,7 @@ namespace BaggageSortingSystem.classes
         -Emptying their shared baggage conveyorbelt from the Sorter
         -Loading the locally stored baggage onto the appropriate flight
     */
-    class Gate : BaggageManagementComponent
+    public class Gate : BaggageManagementComponent
     {
         private int gateNumber;
         private Flight[] flights;
@@ -37,7 +37,7 @@ namespace BaggageSortingSystem.classes
 
         public string ToString()
         {
-            string print = this._Thread.Name + ": is alive and not stopped? " + (!this.Stop && this._Thread.IsAlive) + ". Shared Storage: " + BaggageManager.CountBaggage(CentralServer.bM.GateConveyorBelts[this.gateNumber]) + "/" + CentralServer.bM.GateConveyorBelts[this.gateNumber].Length + ". Local Storage: " + BaggageManager.CountBaggage(this.LocalBaggageBuffer) + "/" + this.LocalBaggageBuffer.Length;
+            string print = this._Thread.Name + ": is alive and not stopped? " + (!this.Stop && this._Thread.IsAlive) + ". Shared Storage: " + BaggageManager.CountBaggage(CentralServer.BM.GateConveyorBelts[this.gateNumber]) + "/" + CentralServer.BM.GateConveyorBelts[this.gateNumber].Length + ". Local Storage: " + BaggageManager.CountBaggage(this.LocalBaggageBuffer) + "/" + this.LocalBaggageBuffer.Length;
 
             for (int i = 0; i < this.flights.Length; i++)
             {
@@ -59,7 +59,7 @@ namespace BaggageSortingSystem.classes
                 }
                 while ((!this.Stop && !this.Killed) || !this.ReadyToStop())
                 {
-                    if(CentralServer.bM.GateConveyorBelts[this.gateNumber][0] != null)
+                    if(CentralServer.BM.GateConveyorBelts[this.gateNumber][0] != null)
                     {
                         // Acquire Baggage
                         AcquireBaggage();
@@ -78,7 +78,7 @@ namespace BaggageSortingSystem.classes
 
         public bool ReadyToStop()
         {
-            return CentralServer.bM.GateConveyorBelts[this.gateNumber][0] == null && this.LocalBaggageBuffer[0] == null && this.flights.Length == 0;
+            return CentralServer.BM.GateConveyorBelts[this.gateNumber][0] == null && this.LocalBaggageBuffer[0] == null && this.flights.Length == 0;
         }
 
         /// <summary>
@@ -88,7 +88,7 @@ namespace BaggageSortingSystem.classes
         {
             object _lock = BaggageManager.gateConveyorBeltLocks[this.gateNumber];
             bool baggageAcquired = false;
-            int sharedBaggageAmount = BaggageManager.CountBaggage(CentralServer.bM.GateConveyorBelts[this.gateNumber]);
+            int sharedBaggageAmount = BaggageManager.CountBaggage(CentralServer.BM.GateConveyorBelts[this.gateNumber]);
             while (!baggageAcquired)
             {
                 if (Monitor.IsEntered(_lock))
@@ -97,8 +97,8 @@ namespace BaggageSortingSystem.classes
                     {
                         for (int i = 0; i < sharedBaggageAmount; i++)
                         {
-                            this.LocalBaggageBuffer = BaggageManager.AddBaggageToBack(CentralServer.bM.GateConveyorBelts[this.gateNumber][0], this.LocalBaggageBuffer);
-                            CentralServer.bM.GateConveyorBelts[this.gateNumber] = BaggageManager.MoveBaggagesForward(CentralServer.bM.GateConveyorBelts[this.gateNumber]);
+                            this.LocalBaggageBuffer = BaggageManager.AddBaggageToBack(CentralServer.BM.GateConveyorBelts[this.gateNumber][0], this.LocalBaggageBuffer);
+                            CentralServer.BM.GateConveyorBelts[this.gateNumber] = BaggageManager.MoveBaggagesForward(CentralServer.BM.GateConveyorBelts[this.gateNumber]);
                         }
                     }
                     finally

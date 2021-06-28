@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace BaggageSortingSystem.classes
 {
-    class Passenger
+    public class Passenger
     {
         private int iD;
         private string name;

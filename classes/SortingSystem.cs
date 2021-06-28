@@ -6,7 +6,7 @@ using System.Threading;
 
 namespace BaggageSortingSystem.classes
 {
-    class SortingSystem : BaggageManagementComponent
+    public class SortingSystem : BaggageManagementComponent
     {
         /*
         The Sorter's job is to:
@@ -52,22 +52,22 @@ namespace BaggageSortingSystem.classes
                     // Attempt to empty each Counter's shared conveyorbelt for baggage and store it locally. - If it's own storage isn't full!
                     if(BaggageManager.CountBaggage(this.LocalBaggageBuffer) < this.LocalBaggageBuffer.Length)
                     {
-                        for (int i = 0; i < CentralServer.bM.Counters.Length; i++)
+                        for (int i = 0; i < CentralServer.BM.Counters.Length; i++)
                         {
                             // It will use TryEnter instead of Enter, and move on if it fails, as the SOrter is a very busy system and can't afford to wait.
-                            PullFromCounterConvenyorBelt(CentralServer.bM.Counters[i].CounterNumber);
+                            PullFromCounterConvenyorBelt(CentralServer.BM.Counters[i].CounterNumber);
                         }
                     }
 
                     // Ensure we have a local baggage batch storage buffer for each gate in existence.
-                    if (this.baggageBatchesForGates.Count < CentralServer.bM.Gates.Length)
+                    if (this.baggageBatchesForGates.Count < CentralServer.BM.Gates.Length)
                     {
-                        for (int i = 0; i < CentralServer.bM.Gates.Length; i++)
+                        for (int i = 0; i < CentralServer.BM.Gates.Length; i++)
                         {
-                            if (!this.baggageBatchesForGates.Keys.Contains(CentralServer.bM.Gates[i].GateNumber))
+                            if (!this.baggageBatchesForGates.Keys.Contains(CentralServer.BM.Gates[i].GateNumber))
                             {
                                 // I realized that it is Very important for the new Baggage[] not to be longer than the gateConveyorBelt's Baggage[], else there can be a deadlock.
-                                this.baggageBatchesForGates.Add(CentralServer.bM.Gates[i].GateNumber, new Baggage[512]);
+                                this.baggageBatchesForGates.Add(CentralServer.BM.Gates[i].GateNumber, new Baggage[512]);
                             }
                         }
                     }
@@ -80,7 +80,7 @@ namespace BaggageSortingSystem.classes
                     // Attempt to empty its own local buffers onto the various gates' belts
                     for (int i = 0; i < this.baggageBatchesForGates.Count; i++)
                     {
-                        PushToGateConveyorBelt(CentralServer.bM.Gates[i].GateNumber);
+                        PushToGateConveyorBelt(CentralServer.BM.Gates[i].GateNumber);
                     }
                 }
             }
@@ -93,7 +93,7 @@ namespace BaggageSortingSystem.classes
         void PullFromCounterConvenyorBelt(int counterNumber)
         {
             object _lock = BaggageManager.counterConveyorBeltLocks[counterNumber];
-            int baggageOnBelt = BaggageManager.CountBaggage(CentralServer.bM.CounterConveyorBelts[counterNumber]);
+            int baggageOnBelt = BaggageManager.CountBaggage(CentralServer.BM.CounterConveyorBelts[counterNumber]);
             int remainingLocalBaggageSpace = this.LocalBaggageBuffer.Length - BaggageManager.CountBaggage(this.LocalBaggageBuffer);
 
             // I am confident in my code, that it would work just fine 99.9999999999999999999999999999% of the time without fail.. However,
@@ -109,12 +109,12 @@ namespace BaggageSortingSystem.classes
                 {
                     for (int i = 0; i < baggageOnBelt + nullGaps; i++)
                     {
-                        if(CentralServer.bM.CounterConveyorBelts[counterNumber][0] != null)
+                        if(CentralServer.BM.CounterConveyorBelts[counterNumber][0] != null)
                         {
                             // Here it puts a piece of baggage into its own storage.
-                            CentralServer.bM.CounterConveyorBelts[counterNumber][0].SortingTS = DateTime.Now;
-                            this.LocalBaggageBuffer = BaggageManager.AddBaggageToBack(CentralServer.bM.CounterConveyorBelts[counterNumber][0], this.LocalBaggageBuffer);
-                            CentralServer.bM.CounterConveyorBelts[counterNumber] = BaggageManager.MoveBaggagesForward(CentralServer.bM.CounterConveyorBelts[counterNumber]);
+                            CentralServer.BM.CounterConveyorBelts[counterNumber][0].SortingTS = DateTime.Now;
+                            this.LocalBaggageBuffer = BaggageManager.AddBaggageToBack(CentralServer.BM.CounterConveyorBelts[counterNumber][0], this.LocalBaggageBuffer);
+                            CentralServer.BM.CounterConveyorBelts[counterNumber] = BaggageManager.MoveBaggagesForward(CentralServer.BM.CounterConveyorBelts[counterNumber]);
                         }
                         else
                         {
@@ -139,9 +139,9 @@ namespace BaggageSortingSystem.classes
             int howMuchToGroup = BaggageManager.CountBaggage(this.LocalBaggageBuffer);
             for (int i = 0; i < howMuchToGroup; i++)
             {
-                if (CentralServer.bM.flightsAtGatesMap.ContainsKey(this.LocalBaggageBuffer[0 + unsorted].FlightID))
+                if (CentralServer.BM.flightsAtGatesMap.ContainsKey(this.LocalBaggageBuffer[0 + unsorted].FlightID))
                 {
-                    int gateNumber = CentralServer.bM.flightsAtGatesMap[this.LocalBaggageBuffer[0 + unsorted].FlightID];
+                    int gateNumber = CentralServer.BM.flightsAtGatesMap[this.LocalBaggageBuffer[0 + unsorted].FlightID];
                     if (BaggageManager.CountBaggage(this.baggageBatchesForGates[gateNumber]) < this.baggageBatchesForGates[gateNumber].Length)
                     {
                         BaggageManager.AddBaggageToBack(this.LocalBaggageBuffer[0 + unsorted], this.baggageBatchesForGates[gateNumber]);
@@ -172,7 +172,7 @@ namespace BaggageSortingSystem.classes
             object _lock = BaggageManager.gateConveyorBeltLocks[gateNumber];
 
             int amountOfBaggageForGate = BaggageManager.CountBaggage(this.baggageBatchesForGates[gateNumber]);
-            int spaceOnGateConveyorBelt = CentralServer.bM.GateConveyorBelts[gateNumber].Length - BaggageManager.CountBaggage(CentralServer.bM.GateConveyorBelts[gateNumber]);
+            int spaceOnGateConveyorBelt = CentralServer.BM.GateConveyorBelts[gateNumber].Length - BaggageManager.CountBaggage(CentralServer.BM.GateConveyorBelts[gateNumber]);
             
             // Once again, the sorter is a very busy component, so it uses TryEnter, and does not wait for the lock or for the gate to make room on its belt.
             if (spaceOnGateConveyorBelt >= amountOfBaggageForGate && Monitor.TryEnter(_lock))
@@ -182,7 +182,7 @@ namespace BaggageSortingSystem.classes
                     for (int i = 0; i < amountOfBaggageForGate; i++)
                     {
                         this.baggageBatchesForGates[gateNumber][0].SortedTS = DateTime.Now;
-                        CentralServer.bM.GateConveyorBelts[gateNumber] = BaggageManager.AddBaggageToBack(this.baggageBatchesForGates[gateNumber][0], CentralServer.bM.GateConveyorBelts[gateNumber]);
+                        CentralServer.BM.GateConveyorBelts[gateNumber] = BaggageManager.AddBaggageToBack(this.baggageBatchesForGates[gateNumber][0], CentralServer.BM.GateConveyorBelts[gateNumber]);
                         this.baggageBatchesForGates[gateNumber] = BaggageManager.MoveBaggagesForward(this.baggageBatchesForGates[gateNumber]);
                     }
                 }

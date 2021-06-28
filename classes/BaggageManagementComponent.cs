@@ -6,7 +6,7 @@ using System.Threading;
 
 namespace BaggageSortingSystem.classes
 {
-    abstract class BaggageManagementComponent
+    public abstract class BaggageManagementComponent
     {
         Thread thread;
         bool stop;

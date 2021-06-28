@@ -6,7 +6,7 @@ using System.Threading;
 
 namespace BaggageSortingSystem.classes
 {
-    class Counter : BaggageManagementComponent
+    public class Counter : BaggageManagementComponent
     {
         /*
         The Counter's Responsibility is to alternatingly:
@@ -36,7 +36,7 @@ namespace BaggageSortingSystem.classes
 
         public string ToString()
         {
-            return this._Thread.Name + " is alive: " + this._Thread.IsAlive + ", stopped: " + this.Stop + ", Has Passenger: " + this.processingPassenger + (this.processingPassenger? " until " + this.checkInCompletionTime.ToString("HH:mm:ss") : "") + ", Shared Buffer: " + BaggageManager.CountBaggage(CentralServer.bM.CounterConveyorBelts[this.counterNumber]) + "/" + CentralServer.bM.CounterConveyorBelts[this.counterNumber].Length;
+            return this._Thread.Name + " is alive: " + this._Thread.IsAlive + ", stopped: " + this.Stop + ", Has Passenger: " + this.processingPassenger + (this.processingPassenger? " until " + this.checkInCompletionTime.ToString("HH:mm:ss") : "") + ", Shared Buffer: " + BaggageManager.CountBaggage(CentralServer.BM.CounterConveyorBelts[this.counterNumber]) + "/" + CentralServer.BM.CounterConveyorBelts[this.counterNumber].Length;
         }
 
         public override void Run()
@@ -59,7 +59,7 @@ namespace BaggageSortingSystem.classes
                         // for in the, unlikely, event that the local buffer fills up before the counter has had a chance to empty it while processing Passengers.
                         PushBaggage();
                     }
-                    else if (!processingPassenger && CentralServer.fM.passengersQueue.Length > 0 && !Stop)
+                    else if (!processingPassenger && CentralServer.FM.passengersQueue.Length > 0 && !Stop)
                     {
                         // Wait/Acquire Passenger
                         processingPassenger = true;
@@ -90,7 +90,7 @@ namespace BaggageSortingSystem.classes
 
                         Thread.Sleep(checkInCompletionTime - DateTime.Now);
                     }
-                    else if (CentralServer.fM.passengersQueue.Length == 0)
+                    else if (CentralServer.FM.passengersQueue.Length == 0)
                     {
                         // There are no Passengers to process, it seems.
                         Thread.Sleep(DateTime.Now.AddSeconds(CentralServer.rnd.Next(10, 30) * CentralServer.timeScale) - DateTime.Now);
@@ -112,15 +112,15 @@ namespace BaggageSortingSystem.classes
         {
             Passenger passenger = null;
             bool passengerAcquired = false;
-            object _lock = CentralServer.fM.passengerQueueLock;
+            object _lock = CentralServer.FM.passengerQueueLock;
             while (!passengerAcquired)
             {
-                if (CentralServer.fM.passengersQueue.Length > 0 && Monitor.IsEntered(_lock))
+                if (CentralServer.FM.passengersQueue.Length > 0 && Monitor.IsEntered(_lock))
                 {
                     try
                     {
-                        passenger = CentralServer.fM.passengersQueue[0];
-                        CentralServer.fM.passengersQueue = FlightManager.CutFrontPassenger(CentralServer.fM.passengersQueue);
+                        passenger = CentralServer.FM.passengersQueue[0];
+                        CentralServer.FM.passengersQueue = FlightManager.CutFrontPassenger(CentralServer.FM.passengersQueue);
                     }
                     finally
                     {
@@ -170,13 +170,13 @@ namespace BaggageSortingSystem.classes
             while (!baggagePushed)
             {
                 int localBaggageCount = BaggageManager.CountBaggage(this.LocalBaggageBuffer);
-                if (CentralServer.bM.CounterConveyorBelts[this.counterNumber].Length - BaggageManager.CountBaggage(CentralServer.bM.CounterConveyorBelts[this.counterNumber]) > localBaggageCount && Monitor.IsEntered(_lock))
+                if (CentralServer.BM.CounterConveyorBelts[this.counterNumber].Length - BaggageManager.CountBaggage(CentralServer.BM.CounterConveyorBelts[this.counterNumber]) > localBaggageCount && Monitor.IsEntered(_lock))
                 {
                     try
                     {
                         for (int i = 0; i < localBaggageCount; i++)
                         {
-                            CentralServer.bM.CounterConveyorBelts[this.counterNumber] = BaggageManager.AddBaggageToBack(this.LocalBaggageBuffer[0], CentralServer.bM.CounterConveyorBelts[this.counterNumber]);
+                            CentralServer.BM.CounterConveyorBelts[this.counterNumber] = BaggageManager.AddBaggageToBack(this.LocalBaggageBuffer[0], CentralServer.BM.CounterConveyorBelts[this.counterNumber]);
                             this.LocalBaggageBuffer = BaggageManager.MoveBaggagesForward(this.LocalBaggageBuffer);
                         }
                     }

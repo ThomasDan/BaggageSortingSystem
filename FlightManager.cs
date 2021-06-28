@@ -7,7 +7,7 @@ using BaggageSortingSystem.classes;
 
 namespace BaggageSortingSystem
 {
-    class FlightManager
+    public class FlightManager
     {
         int nextFlightID;
         int nextPassengerID;

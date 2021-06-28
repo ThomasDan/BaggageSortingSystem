@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace BaggageSortingSystem.classes
 {
-    class Flight
+    public class Flight
     {
         private int iD;
         private DateTime departureTime;

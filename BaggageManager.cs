@@ -4,10 +4,11 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using BaggageSortingSystem.classes;
+using BaggageSortingSystem.events;
 
 namespace BaggageSortingSystem
 {
-    class BaggageManager
+    public class BaggageManager
     {
         bool stop;
         Thread thread;
@@ -21,6 +22,7 @@ namespace BaggageSortingSystem
         private Dictionary<int, Baggage[]> gateConveyorBelts;
         public static Dictionary<int, object> gateConveyorBeltLocks = new Dictionary<int, object>();
         public Dictionary<int, int> flightsAtGatesMap = new Dictionary<int, int>();
+        public event EventHandler GateFlightsChanged;
 
         public bool Stop
         {
@@ -106,7 +108,7 @@ namespace BaggageSortingSystem
             while (!this.stop)
             {
                 // Create/Reopen and assign Gates as required by Flights, update FlightGateMap
-                if (CentralServer.fM.flightsRequiringGate.Length > 0)
+                if (CentralServer.FM.flightsRequiringGate.Length > 0)
                 {
                     // Acquire all flights requiring gates
                     Flight[] flightsToBeAssignedGates = AcquireAllFlightsRequiringGate();
@@ -146,6 +148,7 @@ namespace BaggageSortingSystem
                                 break;
                             }
                         }
+                        BaggageManagerEvented();
                         // Map this flightID to this gateNumber by Updating FlightsAtGatesMap:
                         this.flightsAtGatesMap.Add(flightsToBeAssignedGates[i].ID, gate.GateNumber);
                     }
@@ -177,16 +180,16 @@ namespace BaggageSortingSystem
                 // Create/Reopen Counters, to ensure that the queue doesn't grow beyond a certain size.. Hopefully!
                 counterEfficiency = DetermineCounterEfficiency(counterEfficiency);
                 int unstoppedCounters = CountUnstoppedBMComponents(this.counters);
-                int passengersPerCounter = Convert.ToInt32((CentralServer.fM.passengersQueue.Length == 0 ? 1 : CentralServer.fM.passengersQueue.Length) / (unstoppedCounters == 0 ? 1 : unstoppedCounters));
+                int passengersPerCounter = Convert.ToInt32((CentralServer.FM.passengersQueue.Length == 0 ? 1 : CentralServer.FM.passengersQueue.Length) / (unstoppedCounters == 0 ? 1 : unstoppedCounters));
 
                 // We never want less than 10 passengers per counter.
-                if (this.counters.Length == 0 || counterEfficiency == 3 && passengersPerCounter > 10)
+                if (this.counters.Length == 0 || counterEfficiency == 3 && passengersPerCounter > 7)
                 {
                     // Open and reopen Counters, as required
                     OpenCounters(1);
                 }
                 // We never wanted less than 2 counters open.
-                else if((passengersPerCounter < 10 || counterEfficiency == -3) && unstoppedCounters > 2)
+                else if((passengersPerCounter < 7 || counterEfficiency == -3) && unstoppedCounters > 2)
                 {
                     CloseCounters(1);
                 }
@@ -194,6 +197,11 @@ namespace BaggageSortingSystem
                 Thread.Sleep(Convert.ToInt32(5000 * CentralServer.timeScale));
             }
             KillAll();
+        }
+
+        private void BaggageManagerEvented()
+        {
+            GateFlightsChanged?.Invoke(this, new BaggageManagerEventArgs(this));
         }
 
         /// <summary>
@@ -350,7 +358,7 @@ namespace BaggageSortingSystem
 
         private int DetermineCounterEfficiency(int efi)
         {
-            int passengerQueued = CentralServer.fM.passengersQueue.Length;
+            int passengerQueued = CentralServer.FM.passengersQueue.Length;
             if (efi > 0)
             {
                 if(efi == 3)
@@ -410,7 +418,7 @@ namespace BaggageSortingSystem
         {
             Flight[] flightsToBeAssignedGates = null;
             bool flightsAcquired = false;
-            object _lock = CentralServer.fM.flightsRequiringGateLock;
+            object _lock = CentralServer.FM.flightsRequiringGateLock;
 
             while (!flightsAcquired)
             {
@@ -418,12 +426,12 @@ namespace BaggageSortingSystem
                 {
                     try
                     {
-                        flightsToBeAssignedGates = new Flight[CentralServer.fM.flightsRequiringGate.Length];
+                        flightsToBeAssignedGates = new Flight[CentralServer.FM.flightsRequiringGate.Length];
                         for (int i = 0; i < flightsToBeAssignedGates.Length; i++)
                         {
-                            flightsToBeAssignedGates[i] = CentralServer.fM.flightsRequiringGate[i];
+                            flightsToBeAssignedGates[i] = CentralServer.FM.flightsRequiringGate[i];
                         }
-                        CentralServer.fM.flightsRequiringGate = new Flight[0];
+                        CentralServer.FM.flightsRequiringGate = new Flight[0];
                     }
                     finally
                     {
@@ -434,7 +442,7 @@ namespace BaggageSortingSystem
                 }
                 else
                 {
-                    Monitor.Enter(CentralServer.fM.flightsRequiringGateLock);
+                    Monitor.Enter(CentralServer.FM.flightsRequiringGateLock);
                 }
             }
             return flightsToBeAssignedGates;

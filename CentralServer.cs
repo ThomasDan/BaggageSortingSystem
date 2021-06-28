@@ -8,7 +8,7 @@ using Bogus;
 
 namespace BaggageSortingSystem
 {
-    static class CentralServer
+    public static class CentralServer
     {
         public static bool stop;
         public static Random rnd = new Random();
@@ -37,8 +37,18 @@ namespace BaggageSortingSystem
         public static int totalPassengerBaggage = 0;
         public static volatile int latePassengers = 0;
         public static volatile int lateBaggage = 0;
-        public static FlightManager fM = new FlightManager();
-        public static BaggageManager bM = new BaggageManager();
+        private static BaggageManager bM = new BaggageManager();
+        private static FlightManager fM = new FlightManager();
+        public static FlightManager FM
+        {
+            get { return fM; }
+            set { fM = value; }
+        }
+        public static BaggageManager BM
+        {
+            get { return bM; }
+            set { bM = value; }
+        }
         public static Thread csThread = new Thread(new ThreadStart(RunCentralServer));
 
         public static void RunCentralServer()
@@ -48,10 +58,10 @@ namespace BaggageSortingSystem
             
             while (!stop)
             {
-                Thread.Sleep(500);
+                Thread.Sleep(1000);
             }
             fM.Stop = true;
-            Thread.Sleep(500);
+            Thread.Sleep(Convert.ToInt32(5000 * timeScale));
             bM.Stop = true;
         }
         public static string ToString()

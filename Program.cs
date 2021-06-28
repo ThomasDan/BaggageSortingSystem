@@ -4,17 +4,19 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using BaggageSortingSystem.classes;
-using Bogus;
+using System.Diagnostics;
 
 namespace BaggageSortingSystem
 {
-    class Program
+    public class Program
     {
         static void Main(string[] args)
         {
+            
+            Debug.WriteLine("TEST FROM BaggageSortingSystem HELLLO???");
+
             bool stop = false;
-            CentralServer.csThread.Name = "Central Server";
-            CentralServer.csThread.Start();
+            
             Thread.Sleep(500);
             TestPrintFlightPlan();
 
@@ -31,7 +33,7 @@ namespace BaggageSortingSystem
 
             CentralServer.stop = true;
             Thread.Sleep(10000);
-            Console.WriteLine(CentralServer.bM.ToString());
+            Console.WriteLine(CentralServer.BM.ToString());
 
             Console.ReadLine();
         }
@@ -39,9 +41,9 @@ namespace BaggageSortingSystem
         #region For Testing Purposes!
         private static void TestPrintFlightPlan()
         {
-            for (int i = 0; i < CentralServer.fM.FlightPlan.Length; i++)
+            for (int i = 0; i < CentralServer.FM.FlightPlan.Length; i++)
             {
-                Flight flight = CentralServer.fM.FlightPlan[i];
+                Flight flight = CentralServer.FM.FlightPlan[i];
 
                 Console.WriteLine(flight.ToString() + "\n");
                 /*
