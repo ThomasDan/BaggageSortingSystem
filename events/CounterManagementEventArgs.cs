@@ -7,13 +7,12 @@ using BaggageSortingSystem.classes;
 
 namespace BaggageSortingSystem.events
 {
-    public class BaggageManagerEventArgs : EventArgs
+    public class CounterManagementEventArgs : EventArgs
     {
-        public BaggageManager BM { get; set; }
-
-        public BaggageManagerEventArgs(BaggageManager bM)
+        public Counter[] Counters{ get; set; }
+        public CounterManagementEventArgs(Counter[] counters)
         {
-            this.BM = bM;
+            this.Counters = counters;
         }
     }
 }

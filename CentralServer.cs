@@ -33,7 +33,7 @@ namespace BaggageSortingSystem
             Flight manager: Each hour there are 5-10 flights (10-20 at 2.0 BusynessMod)
                     Every Flight has 50-300 passengers(100-600 at 2.0 busynessMod)
          */
-        public static double busynessModifier = 2.0;
+        public static double busynessModifier = 0.5;
         public static int totalPassengerBaggage = 0;
         public static volatile int latePassengers = 0;
         public static volatile int lateBaggage = 0;

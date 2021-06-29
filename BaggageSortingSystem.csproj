@@ -55,7 +55,8 @@
     <Compile Include="classes\Gate.cs" />
     <Compile Include="classes\Passenger.cs" />
     <Compile Include="classes\SortingSystem.cs" />
-    <Compile Include="events\BaggageManagerEventArgs.cs" />
+    <Compile Include="events\CounterManagementEventArgs.cs" />
+    <Compile Include="events\GateManagementEventArgs.cs" />
     <Compile Include="FlightManager.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

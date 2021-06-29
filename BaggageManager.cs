@@ -22,7 +22,9 @@ namespace BaggageSortingSystem
         private Dictionary<int, Baggage[]> gateConveyorBelts;
         public static Dictionary<int, object> gateConveyorBeltLocks = new Dictionary<int, object>();
         public Dictionary<int, int> flightsAtGatesMap = new Dictionary<int, int>();
-        public event EventHandler GateFlightsChanged;
+
+        public event EventHandler CountersChanged;
+        public event EventHandler GatesChanged;
 
         public bool Stop
         {
@@ -127,7 +129,7 @@ namespace BaggageSortingSystem
                             if (gate != null)
                             {
                                 // Reactivate dead gate
-                                gate.InitializeThread();
+                                gate.Stop = false;
                             }
                             else
                             {
@@ -145,10 +147,10 @@ namespace BaggageSortingSystem
                             if (this.gates[j].GateNumber == gate.GateNumber)
                             {
                                 this.gates[j] = gate;
+                                GateChangeEvented();
                                 break;
                             }
                         }
-                        BaggageManagerEvented();
                         // Map this flightID to this gateNumber by Updating FlightsAtGatesMap:
                         this.flightsAtGatesMap.Add(flightsToBeAssignedGates[i].ID, gate.GateNumber);
                     }
@@ -163,6 +165,7 @@ namespace BaggageSortingSystem
                         {
                             Console.WriteLine("Now taking off: " + gates[i].Flights[j].ToString());
                             gates[i].Flights = FlightManager.CutFrontFlight(gates[i].Flights, j);
+                            GateChangeEvented();
                         }
                     }
                 }
@@ -173,6 +176,7 @@ namespace BaggageSortingSystem
                     if (!gates[i].Stop && gates[i].Flights.Length == 0)
                     {
                         gates[i].Stop = true;
+                        GateChangeEvented();
                     }
                 }
 
@@ -199,9 +203,14 @@ namespace BaggageSortingSystem
             KillAll();
         }
 
-        private void BaggageManagerEvented()
+        private void GateChangeEvented()
         {
-            GateFlightsChanged?.Invoke(this, new BaggageManagerEventArgs(this));
+            GatesChanged?.Invoke(this, new GateManagementEventArgs(this.gates));
+        }
+
+        private void CounterChangeEvented()
+        {
+            CountersChanged?.Invoke(this, new CounterManagementEventArgs(this.counters));
         }
 
         /// <summary>
@@ -226,6 +235,7 @@ namespace BaggageSortingSystem
             this.counters = newCounters;
             this.counters[counters.Length - 1] = counter;
             this.counters[counters.Length - 1].InitializeThread();
+            CounterChangeEvented();
         }
 
         /// <summary>
@@ -250,6 +260,7 @@ namespace BaggageSortingSystem
             this.gates = newGates;
             this.gates[gates.Length - 1] = gate;
             this.gates[gates.Length - 1].InitializeThread();
+            GateChangeEvented();
         }
 
         /// <summary>
@@ -297,6 +308,7 @@ namespace BaggageSortingSystem
                     if (this.counters[j].Stop) //  && this.counters[j].ReadyToStop() - If it was going to stop, then nevermind!
                     {
                         this.counters[j].Stop = false;
+                        CounterChangeEvented();
                         amount--;
                         break;
                     }
@@ -318,6 +330,7 @@ namespace BaggageSortingSystem
                 if (!this.counters[i].Stop)
                 {
                     this.counters[i].Stop = true;
+                    CounterChangeEvented();
                     amount--;
                     if (amount == 0)
                     {
@@ -494,7 +507,7 @@ namespace BaggageSortingSystem
             Gate deadGate = null;
             for (int i = 0; i < this.gates.Length; i++)
             {
-                if(this.gates[i].Stop && !this.gates[i]._Thread.IsAlive)
+                if(this.gates[i].Stop && this.gates[i]._Thread.IsAlive)
                 {
                     deadGate = this.gates[i];
                 }

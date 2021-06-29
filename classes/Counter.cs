@@ -26,6 +26,14 @@ namespace BaggageSortingSystem.classes
         {
             get { return this.counterNumber; }
         }
+        public bool ProcessingPassenger
+        {
+            get { return this.processingPassenger; }
+        }
+        public DateTime CheckInCompletiontime
+        {
+            get { return this.checkInCompletionTime; }
+        }
         
         public Counter(int CounterNumber) : base("Counter " + CounterNumber, 12)
         {
@@ -64,7 +72,7 @@ namespace BaggageSortingSystem.classes
                         // Wait/Acquire Passenger
                         processingPassenger = true;
                         Passenger passenger = AcquirePassenger();
-                        checkInCompletionTime = DateTime.Now.AddSeconds((CentralServer.rnd.Next(90, 240) + (30 * passenger.NumberOfBaggage)) * CentralServer.timeScale);
+                        checkInCompletionTime = DateTime.Now.AddSeconds(CentralServer.rnd.Next(90, 240) * CentralServer.timeScale);
 
                         // Let's see if the passenger made it on time.
                         if (passenger._Flight.DepartureTime > DateTime.Now.AddMinutes(30 * CentralServer.timeScale))
@@ -170,6 +178,7 @@ namespace BaggageSortingSystem.classes
             while (!baggagePushed)
             {
                 int localBaggageCount = BaggageManager.CountBaggage(this.LocalBaggageBuffer);
+                Thread.Sleep(Convert.ToInt32(30000 * CentralServer.timeScale));
                 if (CentralServer.BM.CounterConveyorBelts[this.counterNumber].Length - BaggageManager.CountBaggage(CentralServer.BM.CounterConveyorBelts[this.counterNumber]) > localBaggageCount && Monitor.IsEntered(_lock))
                 {
                     try
@@ -192,7 +201,7 @@ namespace BaggageSortingSystem.classes
                     if (Monitor.IsEntered(_lock))
                     {
                         // It has the lock, but there is not room for the produce (Baggage) in the buffer, so we shall relinguish and wait for pulse.
-                        Monitor.Wait(_lock, 50);
+                        Monitor.Wait(_lock);
                     }
                     else
                     {
