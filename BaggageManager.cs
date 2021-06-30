@@ -25,6 +25,7 @@ namespace BaggageSortingSystem
 
         public event EventHandler CountersChanged;
         public event EventHandler GatesChanged;
+        public event EventHandler FlightTakeOff;
 
         public bool Stop
         {
@@ -92,7 +93,6 @@ namespace BaggageSortingSystem
 
         public void InitializeThread()
         {
-            this.stop = false;
             this.thread.Start();
         }
 
@@ -112,59 +112,19 @@ namespace BaggageSortingSystem
                 // Create/Reopen and assign Gates as required by Flights, update FlightGateMap
                 if (CentralServer.FM.flightsRequiringGate.Length > 0)
                 {
-                    // Acquire all flights requiring gates
-                    Flight[] flightsToBeAssignedGates = AcquireAllFlightsRequiringGate();
-
-                    // assign those flights to gates. Update FlightGateMap
-                    for (int i = 0; i < flightsToBeAssignedGates.Length; i++)
-                    {
-                        // Find an available Gate:
-                        Gate gate = FindAvailableGate(flightsToBeAssignedGates[i]);
-
-                        // If gate == null, then no gate with available time span for this flight was found, therefore we will have to reactivate a gate, or create a new gate.
-                        if (gate == null)
-                        {
-                            gate = AcquireStoppedDeadGate();
-
-                            if (gate != null)
-                            {
-                                // Reactivate dead gate
-                                gate.Stop = false;
-                            }
-                            else
-                            {
-                                // There are no non-stopped or dead gates available, ergo we must create a new Gate to facilitate the flight
-                                CreateGate();
-                                gate = this.gates[this.gates.Length - 1];
-                            }
-                        }
-
-                        // Add Flight to available Gate:
-                        gate.Flights = FlightManager.AddFlightToBack(flightsToBeAssignedGates[i], gate.Flights);
-                        // Save gate to gates:
-                        for (int j = 0; j < this.gates.Length; j++)
-                        {
-                            if (this.gates[j].GateNumber == gate.GateNumber)
-                            {
-                                this.gates[j] = gate;
-                                GateChangeEvented();
-                                break;
-                            }
-                        }
-                        // Map this flightID to this gateNumber by Updating FlightsAtGatesMap:
-                        this.flightsAtGatesMap.Add(flightsToBeAssignedGates[i].ID, gate.GateNumber);
-                    }
+                    AssignGates();
                 }
 
-                // Remove flights which have flown (Departure Time has passed) from gates
+                // Remove flights which have flown (Departure Time has passed) from gates.. known to cause exception errors! Needs Monitor Locks.
                 for (int i = 0; i < this.gates.Length; i++)
                 {
-                    for (int j = 0; j < gates[i].Flights.Length; j++)
+                    for (int j = 0; j < this.gates[i].Flights.Length; j++)
                     {
-                        if (gates[i].Flights[j].DepartureTime < DateTime.Now)
+                        if (this.gates[i].Flights[j].DepartureTime < DateTime.Now)
                         {
-                            Console.WriteLine("Now taking off: " + gates[i].Flights[j].ToString());
-                            gates[i].Flights = FlightManager.CutFrontFlight(gates[i].Flights, j);
+                            Console.WriteLine("Now taking off: " + this.gates[i].Flights[j].ToString());
+                            this.gates[i].Flights = FlightManager.CutFrontFlight(this.gates[i].Flights, j);
+                            FlightTakeOffEvented();
                             GateChangeEvented();
                         }
                     }
@@ -211,6 +171,57 @@ namespace BaggageSortingSystem
         private void CounterChangeEvented()
         {
             CountersChanged?.Invoke(this, new CounterManagementEventArgs(this.counters));
+        }
+
+        private void FlightTakeOffEvented()
+        {
+            FlightTakeOff?.Invoke(this, new FlightDepartureEventArgs());
+        }
+
+        private void AssignGates()
+        {
+            // Acquire all flights requiring gates
+            Flight[] flightsToBeAssignedGates = AcquireAllFlightsRequiringGate();
+
+            // assign those flights to gates. Update FlightGateMap
+            for (int i = 0; i < flightsToBeAssignedGates.Length; i++)
+            {
+                // Find an available Gate:
+                Gate gate = FindAvailableGate(flightsToBeAssignedGates[i]);
+
+                // If gate == null, then no gate with available time span for this flight was found, therefore we will have to reactivate a gate, or create a new gate.
+                if (gate == null)
+                {
+                    gate = AcquireStoppedDeadGate();
+
+                    if (gate != null)
+                    {
+                        // Reactivate dead gate
+                        gate.Stop = false;
+                    }
+                    else
+                    {
+                        // There are no non-stopped or dead gates available, ergo we must create a new Gate to facilitate the flight
+                        CreateGate();
+                        gate = this.gates[this.gates.Length - 1];
+                    }
+                }
+
+                // Add Flight to available Gate:
+                gate.Flights = FlightManager.AddFlightToBack(flightsToBeAssignedGates[i], gate.Flights);
+                // Save gate to gates:
+                for (int j = 0; j < this.gates.Length; j++)
+                {
+                    if (this.gates[j].GateNumber == gate.GateNumber)
+                    {
+                        this.gates[j] = gate;
+                        GateChangeEvented();
+                        break;
+                    }
+                }
+                // Map this flightID to this gateNumber by Updating FlightsAtGatesMap:
+                this.flightsAtGatesMap.Add(flightsToBeAssignedGates[i].ID, gate.GateNumber);
+            }
         }
 
         /// <summary>

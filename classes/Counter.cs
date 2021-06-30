@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using BaggageSortingSystem.events;
 
 namespace BaggageSortingSystem.classes
 {
@@ -21,7 +22,7 @@ namespace BaggageSortingSystem.classes
         // By scheduling at what point in time that the counter will, at the earliest (It could potentially get stuck in case of a full buffer),
         // be done processing the passenger, we can avoid using Thread.Sleep() and have the thread keep working while there's stuff for it to do.
         private DateTime checkInCompletionTime;
-        
+
         public int CounterNumber
         {
             get { return this.counterNumber; }
@@ -118,39 +119,7 @@ namespace BaggageSortingSystem.classes
         /// <returns></returns>
         Passenger AcquirePassenger()
         {
-            Passenger passenger = null;
-            bool passengerAcquired = false;
-            object _lock = CentralServer.FM.passengerQueueLock;
-            while (!passengerAcquired)
-            {
-                if (CentralServer.FM.passengersQueue.Length > 0 && Monitor.IsEntered(_lock))
-                {
-                    try
-                    {
-                        passenger = CentralServer.FM.passengersQueue[0];
-                        CentralServer.FM.passengersQueue = FlightManager.CutFrontPassenger(CentralServer.FM.passengersQueue);
-                    }
-                    finally
-                    {
-                        Monitor.PulseAll(_lock);
-                        Monitor.Exit(_lock);
-                        passengerAcquired = true;
-                    }
-                }
-                else
-                {
-                    if (Monitor.IsEntered(_lock))
-                    {
-                        // It has the lock, but there is nothing to consume, so we shall relinguish _lock and wait for pulse.
-                        Monitor.Wait(_lock);
-                    }
-                    else
-                    {
-                        Monitor.Enter(_lock);
-                    }
-                }
-            }
-            return passenger;
+            return CentralServer.FM.AcquirePassenger();
         }
 
         /// <summary>

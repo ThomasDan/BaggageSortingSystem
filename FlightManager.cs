@@ -4,9 +4,13 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using BaggageSortingSystem.classes;
+using BaggageSortingSystem.events;
 
 namespace BaggageSortingSystem
 {
+    /// <summary>
+    /// FlightManager is essentially the Database Simulator. It generates new flights and the passengers to those.
+    /// </summary>
     public class FlightManager
     {
         int nextFlightID;
@@ -15,8 +19,12 @@ namespace BaggageSortingSystem
         DateTime lastGeneratedSegmentEnd;
         Flight[] flightPlan;
         Thread thread;
+
         public Passenger[] passengersQueue = new Passenger[0];
         public object passengerQueueLock = new object();
+        public event EventHandler PassengerQueueChanged;
+
+
         public Flight[] flightsRequiringGate = new Flight[0];
         public object flightsRequiringGateLock = new object();
 
@@ -216,6 +224,7 @@ namespace BaggageSortingSystem
                         Monitor.PulseAll(passengerQueueLock);
                         Monitor.Exit(passengerQueueLock);
                         passengersEnqueued = true;
+                        PassengerQueueEvent();
                     }
                 }
                 else
@@ -223,6 +232,49 @@ namespace BaggageSortingSystem
                     Monitor.Enter(passengerQueueLock);
                 }
             }
+        }
+
+        private void PassengerQueueEvent()
+        {
+            PassengerQueueChanged?.Invoke(this, new PassengerQueueEventArgs());
+        }
+
+        public Passenger AcquirePassenger()
+        {
+            Passenger passenger = null;
+            bool passengerAcquired = false;
+            object _lock = CentralServer.FM.passengerQueueLock;
+            while (!passengerAcquired)
+            {
+                if (CentralServer.FM.passengersQueue.Length > 0 && Monitor.IsEntered(_lock))
+                {
+                    try
+                    {
+                        passenger = CentralServer.FM.passengersQueue[0];
+                        CentralServer.FM.passengersQueue = FlightManager.CutFrontPassenger(CentralServer.FM.passengersQueue);
+                    }
+                    finally
+                    {
+                        Monitor.PulseAll(_lock);
+                        Monitor.Exit(_lock);
+                        passengerAcquired = true;
+                        PassengerQueueEvent();
+                    }
+                }
+                else
+                {
+                    if (Monitor.IsEntered(_lock))
+                    {
+                        // It has the lock, but there is nothing to consume, so we shall relinguish _lock and wait for pulse.
+                        Monitor.Wait(_lock);
+                    }
+                    else
+                    {
+                        Monitor.Enter(_lock);
+                    }
+                }
+            }
+            return passenger;
         }
 
         #region Array Handling
